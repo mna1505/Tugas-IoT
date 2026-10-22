@@ -50,7 +50,9 @@
     const MQTT_TOPIC = "unesa/iot/boomgate"; // Topik yang didengarkan oleh Python
     const clientId = "qr-gate-" + Date.now();
 
-    const client = new Paho.MQTT.Client(MQTT_BROKER, MQTT_PORT, "/mqtt", clientId);
+    // const client = new Paho.MQTT.Client(MQTT_BROKER, MQTT_PORT, "/mqtt", clientId);
+    // Pastikan memanggil protokol wss:// (Secure WebSockets) untuk EMQX Public Broker
+    const client = new Paho.MQTT.Client("broker.emqx.io", Number(8084), "client_" + parseInt(Math.random() * 100));
     
     client.connect({ 
         useSSL: true, 
