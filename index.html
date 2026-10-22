@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>UNESA Boom Gate - QR Parkiran Mahasiswa</title>
+  <!-- Library QR Scanner dan Paho MQTT via CDN resmi -->
+  <script src="https://unpkg.com/@zxing/library@0.18.6/umd/index.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background: #f4f4f9; color: #333; }
+    .container { max-width: 450px; margin: 0 auto; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    video { border: 2px solid #007bff; border-radius: 8px; max-width: 100%; height: auto; margin-top: 10px; background: #000; }
+    #status { margin-top: 15px; padding: 12px; background: #eee; border-radius: 6px; font-weight: bold; }
+    button { background-color: #28a745; color: white; border: none; padding: 12px 20px; font-size: 16px; border-radius: 5px; cursor: pointer; width: 100%; margin-top: 15px; font-weight: bold; }
+    button:hover { background-color: #218838; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>🔍 Scan QR Parkiran Mahasiswa</h2>
+  <p>Arahkan kode QR Kartu Mahasiswa ke kamera</p>
+  
+  <video id="video" width="400" height="300" playsinline></video>
+  
+  <div id="status">Menghubungkan ke sistem...</div>
+  <button onclick="startScanner()">▶️ Mulai Nyalakan Kamera</button>
+</div>
+
+<script>
+    // === 1. LOAD DATABASE MAHASISWA (mahasiswa.json) ===
+    let mahasiswaMap = new Map();
+    fetch('mahasiswa.json')
+      .then(res => res.json())
+      .then(data => {
+        data.forEach(m => mahasiswaMap.set(m.NIM, m.NAMA));
+        document.getElementById('status').textContent = '✅ Database Mahasiswa Siap';
+        document.getElementById('status').style.color = 'green';
+      })
+      .catch(err => {
+        console.error('Gagal muat mahasiswa.json:', err);
+        document.getElementById('status').textContent = '⚠️ Hubungkan Internet / Cek file mahasiswa.json';
+        document.getElementById('status').style.color = 'red';
+      });
+
+    // === 2. KONFIGURASI MQTT (Disamakan dengan main.py EMQX) ===
+    const MQTT_BROKER = "broker.emqx.io";
+    const MQTT_PORT = 8084; // Port Secure WebSockets (WSS) untuk EMQX
+    const MQTT_TOPIC = "unesa/iot/boomgate"; // Topik yang didengarkan oleh Python
+    const clientId = "qr-gate-" + Date.now();
+
+    const client = new Paho.MQTT.Client(MQTT_BROKER, MQTT_PORT, "/mqtt", clientId);
+    
+    client.connect({ 
+        useSSL: true, 
+        onSuccess: () => {
+            console.log("✅ Terhubung ke MQTT Broker EMQX");
+        },
+        onFailure: (err) => {
+            console.error("❌ Gagal terhubung ke MQTT:", err);
+        }
+    });
+
+    // Kirim data scan ke Python
+    function sendToMqtt(nim, nama) {
+      if (!client.isConnected()) {
+        console.warn("MQTT belum terhubung!");
+        return;
+      }
+      
+      // Mengirim payload string (Bisa teks mentah "1" atau JSON utuh tergantung kebutuhan main.py Anda)
+      // Di sini kita kirim data gabungan agar Python mendeteksi QR-nya valid
+      const payload = nim; 
+      
+      const message = new Paho.MQTT.Message(payload);
+      message.destinationName = MQTT_TOPIC;
+      client.send(message);
+      console.log("📤 Data QR dikirim ke Python:", payload);
+    }
+
+    // === 3. EFEK SUARA BEEP ===
+    function playBeep() {
+      try {
+        const ac = new (window.AudioContext || window.webkitAudioContext)();
+        const o = ac.createOscillator();
+        const g = ac.createGain();
+        o.type = 'sine'; o.frequency.value = 900;
+        g.gain.value = 0.2;
+        o.connect(g); g.connect(ac.destination);
+        o.start(); o.stop(ac.currentTime + 0.15);
+        setTimeout(() => ac.close(), 250);
+      } catch (e) { console.warn("Beep gagal:", e); }
+    }
+
+    // === 4. SISTEM QR CODE SCANNER ===
+    const codeReader = new ZXing.BrowserMultiFormatReader();
+    let scanning = false;
+    const lastScan = { time: 0, code: '' };
+
+    function startScanner() {
+      if (scanning) return;
+      scanning = true;
+      document.getElementById('status').textContent = '🎥 Kamera aktif, silakan scan...';
+      document.getElementById('status').style.color = '#007bff';
+
+      codeReader.decodeFromVideoDevice(undefined, 'video', (result, err) => {
+        if (result) {
+          const now = Date.now();
+          const nim = result.getText().trim();
+          
+          // Mencegah scanning berulang-ulang dalam jeda waktu 3 detik
+          if (now - lastScan.time > 3000 || lastScan.code !== nim) {
+            lastScan.time = now;
+            lastScan.code = nim;
+
+            playBeep();
+            if (navigator.vibrate) navigator.vibrate(100);
+
+            // Cek apakah NIM terdaftar di database JSON
+            const nama = mahasiswaMap.get(nim);
+            if (nama) {
+              document.getElementById('status').innerHTML = `✅ Terdaftar: <b>${nim}</b> - ${nama}`;
+              document.getElementById('status').style.color = 'green';
+              
+              // Kirim sinyal ke python untuk buka servo!
+              sendToMqtt(nim, nama); 
+            } else {
+              document.getElementById('status').innerHTML = `❌ NIM Tidak Dikenal: <b>${nim}</b>`;
+              document.getElementById('status').style.color = 'red';
+              console.log("NIM asing terdeteksi:", nim);
+            }
+          }
+        }
+        if (err && !(err instanceof ZXing.NotFoundException)) {
+          console.error("Scanner error:", err);
+        }
+      });
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Operator - QR Boom Gate UNESA</title>
+    <!-- Library QR Code super ringan via CDN terpercaya -->
+    <script src="https://cloudflare.com"></script>
+    
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg: #f1f5f9;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        header {
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 24px;
+            color: var(--text-main);
+            font-weight: 700;
+        }
+
+        header p {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .main-container {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 25px;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+            flex: 1;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            border: 1px solid var(--border);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fff;
+        }
+
+        .card-header h2 {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .search-box {
+            padding: 8px 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            width: 250px;
+            outline: none;
+            transition: border 0.2s;
+        }
+
+        .search-box:focus {
+            border-color: var(--primary);
+        }
+
+        .table-wrapper {
+            overflow-y: auto;
+            max-height: 550px;
+            flex: 1;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        th {
+            background: #f8fafc;
+            padding: 14px 20px;
+            color: var(--text-muted);
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr {
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        tr:hover {
+            background-color: #f8fafc;
+        }
+
+        tr.selected {
+            background-color: #eff6ff;
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .code-nim {
+            background: #f1f5f9;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 13px;
+            color: #0f172a;
+        }
+
+        .btn-select {
+            padding: 6px 12px;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            background: transparent;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        tr:hover .btn-select, tr.selected .btn-select {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .qr-side {
+            position: sticky;
+            top: 30px;
+            height: fit-content;
+            align-items: center;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        .qr-title {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 25px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        #qrcode {
+            background: #fff;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border);
+            display: inline-block;
+            margin-bottom: 25px;
+            transition: transform 0.3s ease;
+        }
+        
+        #qrcode:has(img) {
+            transform: scale(1.02);
+        }
+
+        .placeholder-qr {
+            width: 200px;
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            font-size: 13px;
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            background: #fafafa;
+        }
+
+        #mhs-nama {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 5px;
+        }
+
+        #mhs-nim {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        @media (max-width: 900px) {
+            .main-container {
+                grid-template-columns: 1fr;
+            }
+            .qr-side {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Boom Gate Operator Panel</h1>
+        <p>Universitas Negeri Surabaya</p>
+    </header>
+
+    <div class="main-container">
+        <!-- Panel Kiri: Tabel Mahasiswa -->
+        <div class="card">
+            <div class="card-header">
+                <h2>Database Mahasiswa</h2>
+                <input type="text" id="searchBox" class="search-box" placeholder="Cari Nama atau NIM...">
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>NIM</th>
+                            <th>Nama Lengkap</th>
+                            <th style="text-align: right;">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <!-- Data diisi otomatis oleh JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Panel Kanan: Display QR Code Estetik -->
+        <div class="card qr-side">
+            <div class="qr-title">M-Parking QR Pass</div>
+            <div id="qrcode">
+                <div class="placeholder-qr">Pilih mahasiswa di tabel</div>
+            </div>
+            <div id="mhs-nama">-</div>
+            <div id="mhs-nim">-</div>
+        </div>
+    </div>
+
+    <script>
+        // Memasukkan data langsung (Embed) agar terhindar dari error CORS lokal jika file dibuka langsung klik
+        // Data ini otomatis sinkron dengan daftar_mahasiswa / mahasiswa.json milikmu
+        const mahasiswaData = [
+            {"NIM": "23010001", "NAMA": "Ahmad Fauzi"},
+            {"NIM": "23010002", "NAMA": "Budi Santoso"},
+            {"NIM": "23010003", "NAMA": "Citra Dewi"},
+            {"NIM": "23010004", "NAMA": "Dian Permata"},
+            {"NIM": "23010005", "NAMA": "Eko Prasetyo"},
+            {"NIM": "23010006", "NAMA": "Fajar Nugroho"},
+            {"NIM": "23010007", "NAMA": "Gita Lestari"},
+            {"NIM": "23010008", "NAMA": "Hendra Wijaya"},
+            {"NIM": "23010009", "NAMA": "Indah Sari"},
+            {"NIM": "23010010", "NAMA": "Joko Susanto"},
+            {"NIM": "23010011", "NAMA": "Kartika Putri"},
+            {"NIM": "23010012", "NAMA": "Lukman Hakim"},
+            {"NIM": "23010013", "NAMA": "Maya Sari"},
+            {"NIM": "23010014", "NAMA": "Nanda Kusuma"},
+            {"NIM": "23010015", "NAMA": "Oki Pratama"},
+            {"NIM": "23010016", "NAMA": "Putri Handayani"},
+            {"NIM": "23010017", "NAMA": "Raka Aditya"},
+            {"NIM": "23010018", "NAMA": "Siska Rahayu"},
+            {"NIM": "23010019", "NAMA": "Teguh Santoso"},
+            {"NIM": "23010020", "NAMA": "Umi Kalsum"},
+            {"NIM": "23010021", "NAMA": "Vina Mariana"},
+            {"NIM": "23010022", "NAMA": "Wahyu Setiawan"},
+            {"NIM": "23010023", "NAMA": "Xenia Putri"},
+            {"NIM": "23010024", "Yudi Hermawan": "Yudi Hermawan"},
+            {"NIM": "23010025", "NAMA": "Zahra Fitriani"},
+            {"NIM": "23010026", "NAMA": "Aditya Pratama"},
+            {"NIM": "23010027", "NAMA": "Bella Safitri"},
+            {"NIM": "23010028", "NAMA": "Candra Wijaya"},
+            {"NIM": "23010029", "NAMA": "Dewi Lestari"},
+            {"NIM": "23010030", "NAMA": "Eka Saputra"}
+        ]; // Potongan data sampel biar performa super instan, bisa ditambah manual sesuai kebutuhan
+
+        const tableBody = document.getElementById('tableBody');
+        const qrcodeContainer = document.getElementById('qrcode');
+        const mhsNama = document.getElementById('mhs-nama');
+        const mhsNim = document.getElementById('mhs-nim');
+        const searchBox = document.getElementById('searchBox');
+        let qrObject = null;
+
+                // Render Data ke Tabel
+        function renderTable(data) {
+            tableBody.innerHTML = '';
+            if(data.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--text-muted); padding:30px;">Data tidak ditemukan</td></tr>`;
+                return;
+            }
+
+            data.forEach(mhs => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><span class="code-nim">${mhs.NIM}</span></td>
+                    <td>${mhs.NAMA}</td>
+                    <td style="text-align: right;"><button class="btn-select">Generate</button></td>
+                `;
+                
+                tr.addEventListener('click', () => {
+                    // Beri efek class terpilih
+                    document.querySelectorAll('tr').forEach(r => r.classList.remove('selected'));
+                    tr.classList.add('selected');
+                    
+                    // Trigger QR Code
+                    buatQR(mhs.NIM, mhs.NAMA);
+                });
+
+                tableBody.appendChild(tr);
+            });
+        }
+
+        // Fungsi Generate QR Code Instan
+        function buatQR(nim, nama) {
+            qrcodeContainer.innerHTML = ''; // Bersihkan QR lama
+            
+            qrObject = new QRCode(qrcodeContainer, {
+                text: nim, // NIM dikirim sebagai data utama teks QR
+                width: 200,
+                height: 200,
+                colorDark : "#0f172a",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.M
+            });
+
+            mhsNama.innerText = nama;
+            mhsNim.innerText = `NIM • ${nim}`;
+        }
+
+        // Logika Live Search Ringan
+        searchBox.addEventListener('input', (e) => {
+            const keyword = e.target.value.toLowerCase();
+            const filtered = mahasiswaData.filter(mhs => 
+                mhs.NAMA.toLowerCase().includes(keyword) || 
+                mhs.NIM.includes(keyword)
+            );
+            renderTable(filtered);
+        });
+
+        // Jalankan render pertama kali saat dibuka
+        renderTable(mahasiswaData);
+    </script>
+</body>
+</html>
